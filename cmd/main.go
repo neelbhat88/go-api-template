@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
+	"github.com/neelbhat88/go-api-template/internal/apimiddleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -44,7 +45,8 @@ func main() {
 	// A good base middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	r.Use(apimiddleware.RequestResponseLogger)
+	r.Use(middleware.Heartbeat("/ping"))
 	r.Use(middleware.Recoverer)
 
 	// Set a timeout value on the request context (ctx), that will signal
@@ -55,11 +57,17 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("name")
 
+		// TODO: Use zerolog hook to create an internal log package that always logs requestID with each log entry
+		log.Info().Str("name", name).Msg("saying hi to someone")
+
 		if name == "world" {
+			// TODO: Make a helper function to return a response with a status code and message
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Name cannot be 'world'"))
 			return
 		}
+
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf("Hello, %s!", name)))
 	})
 
