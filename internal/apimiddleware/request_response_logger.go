@@ -3,6 +3,7 @@ package apimiddleware
 import (
 	"bytes"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog"
 	"io"
 	"net/http"
 	"time"
@@ -35,6 +36,10 @@ func RequestResponseLogger(next http.Handler) http.Handler {
 			requestID = reqID.(string)
 		}
 
+		log.Logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+			return c.Str("_request_id", requestID)
+		})
+
 		var requestBody bytes.Buffer
 		if r.Body != nil {
 			body, _ := io.ReadAll(r.Body)
@@ -45,11 +50,10 @@ func RequestResponseLogger(next http.Handler) http.Handler {
 		rw := &responseWriter{ResponseWriter: w}
 
 		log.Info().
-			Str("_request_id", requestID).
 			Str("method", r.Method).
 			Str("path", r.URL.Path).
 			Str("params", r.URL.Query().Encode()).
-			Str("request_body", requestBody.String()).
+			//Str("request_body", requestBody.String()).
 			Msg("Request received")
 
 		next.ServeHTTP(rw, r)
@@ -61,7 +65,7 @@ func RequestResponseLogger(next http.Handler) http.Handler {
 			logEvent = log.Error()
 		}
 
-		logEvent.Str("_request_id", requestID).
+		logEvent.
 			Str("method", r.Method).
 			Str("path", r.URL.Path).
 			Int("status", rw.status).
