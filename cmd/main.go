@@ -4,15 +4,24 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/joho/godotenv"
 	v1 "github.com/neelbhat88/go-api-template/cmd/domain/v1"
 	"github.com/neelbhat88/go-api-template/internal/apimiddleware"
+	"github.com/neelbhat88/go-api-template/internal/data/postgres"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"time"
 )
+
+type DatabaseMigrationSource struct {
+}
+
+func (DatabaseMigrationSource) GetMigrations() postgres.PostgresMigrations {
+	return postgres.GetMigrations()
+}
 
 func main() {
 	err := godotenv.Load()
@@ -24,11 +33,14 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	//var dbConfig postgres.DatabaseConfig
-	//err = cleanenv.ReadEnv(&dbConfig)
-	//if err != nil {
-	//	log.Error().Err(err).Msg("Failed to read DatabaseConfig from config.env")
-	//}
+	// TODO: Postgresql setup with testing and migrations
+	// TODO: dependency injection into handlers
+
+	var dbConfig postgres.DatabaseConfig
+	err = cleanenv.ReadEnv(&dbConfig)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to read DatabaseConfig from config.env")
+	}
 
 	//var appConfig AppConfig
 	//err = cleanenv.ReadEnv(&appConfig)
@@ -36,12 +48,14 @@ func main() {
 	//	log.Error().Err(err).Msg("Failed to read AppConfig from config.env")
 	//}
 
-	//ms := DatabaseMigrationSource{}
-	//db, err := postgres.InitializeDB(dbConfig, ms)
-	//if err != nil {
-	//	log.Fatal().Err(err).Msg("Failed to initialize DB")
-	//}
-	//defer db.Close()
+	ms := DatabaseMigrationSource{}
+	db, err := postgres.InitializeDB(dbConfig, ms)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize DB")
+	}
+	defer db.Close()
+
+	v1Handler := v1.NewHandler(db)
 
 	r := chi.NewRouter()
 
@@ -55,7 +69,8 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/", v1.Root)
+		r.Get("/", v1Handler.Root)
+		r.Get("/users", v1Handler.GetUsers)
 	})
 
 	port := os.Getenv("PORT")

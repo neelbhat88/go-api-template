@@ -1,6 +1,6 @@
 PROJNAME := api-template
 DB_CONTAINER := ${PROJNAME}-db
-DB_CONNECTION_URI := 'postgres://user:password@localhost:5437/mydb?sslmode=disable'
+DB_CONNECTION_URI := 'postgres://api-template:api-template@localhost:5437/api-template?sslmode=disable'
 BUILD_DIR := build
 APP_NAME := application
 

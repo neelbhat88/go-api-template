@@ -3,6 +3,14 @@
 This is my goto template for creating a new API in Go. It includes a basic structure for the project, logging, 
 configuration, and database setup. It's a slimmed down version of the template we use for our Go services at my job but made simpler for my side projects. 
 
+## Getting Started
+1. Clone the repo to a directory with your project name
+2. Update `docker-compose.yml` file with your project name in the relevant places (DB name, app name, etc)
+3. Update variables in the Makefile to match your project name ($PROJNAME and $DB_CONNECTION_URI for example)
+4. Rename `.env-template` to `.env` and set appropriate values
+5. The template sets up Users as an example in domain, service, and data directories. Update or delete as you see fit. Delete the migrations and start new ones
+6. Go build something cool!
+
 ## Components
 * Router - [Chi](https://github.com/go-chi/chi)
 * Logging - [Zerolog](https://github.com/rs/zerolog)

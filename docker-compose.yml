@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  api-template-db:
+    image: postgres:16.3-alpine
+    environment:
+      POSTGRES_USER: api-template
+      POSTGRES_PASSWORD: api-template
+      POSTGRES_DB: api-template
+    ports:
+      - ${PGPORT:-5437}:5432
+    volumes:
+      - ~/.postgres/api-template:/var/lib/postgresql/data
+
+  api-template-app:
+    image: api-template:latest
+    environment:
+      PGHOST: localhost
+      PGPORT: ${PGPORT}
+    depends_on:
+      - api-template-db
+    ports:
+      - "9000:8000"
