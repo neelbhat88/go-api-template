@@ -16,13 +16,6 @@ import (
 	"time"
 )
 
-type DatabaseMigrationSource struct {
-}
-
-func (DatabaseMigrationSource) GetMigrations() postgres.PostgresMigrations {
-	return postgres.GetMigrations()
-}
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -32,9 +25,6 @@ func main() {
 	if os.Getenv("ENV") == "local" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
-
-	// TODO: Postgresql setup with testing and migrations
-	// TODO: dependency injection into handlers
 
 	var dbConfig postgres.DatabaseConfig
 	err = cleanenv.ReadEnv(&dbConfig)
@@ -48,12 +38,11 @@ func main() {
 	//	log.Error().Err(err).Msg("Failed to read AppConfig from config.env")
 	//}
 
-	ms := DatabaseMigrationSource{}
-	db, err := postgres.InitializeDB(dbConfig, ms)
+	db, cleanup, err := postgres.InitializeDB(dbConfig)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize DB")
 	}
-	defer db.Close()
+	defer cleanup()
 
 	v1Handler := v1.NewHandler(db)
 

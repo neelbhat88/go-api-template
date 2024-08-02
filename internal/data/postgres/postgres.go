@@ -31,24 +31,28 @@ type PostgresMigrations struct {
 	Path           string
 }
 
-func InitializeDB(params DatabaseConfig, migrationSource MigrationSource) (*sqlx.DB, error) {
+func InitializeDB(params DatabaseConfig) (*sqlx.DB, func(), error) {
 	db, err := ConnectPostgres(params)
 	if err != nil {
 		log.Error().Err(err).Any("params", params).Msg("InitializeDB failed to ConnectPostgres")
-		return db, err
+		return db, func() {}, err
 	}
 
-	if migrationSource != nil {
-		migrationParams := (migrationSource).GetMigrations()
-		err = RunPostgresMigrations(db, migrationParams)
-		if err != nil {
-			log.Error().Err(err).Msg("RunPostgresMigrationsFailed")
-
-			return db, err
+	cleanup := func() {
+		if err := db.Close(); err != nil {
+			log.Error().Err(err).Msg("Failed to close database connection")
 		}
 	}
 
-	return db, nil
+	migrationParams := GetMigrations()
+	err = RunPostgresMigrations(db, migrationParams)
+	if err != nil {
+		log.Error().Err(err).Msg("RunPostgresMigrationsFailed")
+
+		return db, cleanup, err
+	}
+
+	return db, cleanup, nil
 }
 
 func ConnectPostgres(params DatabaseConfig) (*sqlx.DB, error) {

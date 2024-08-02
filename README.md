@@ -1,7 +1,8 @@
 # GO API Template
 
 This is my goto template for creating a new API in Go. It includes a basic structure for the project, logging, 
-configuration, and database setup. It's a slimmed down version of the template we use for our Go services at my job but made simpler for my side projects. 
+configuration, and database setup. It's a slimmed down version of the template we use for our Go services at my job with some changes for new libraries
+or patterns I prefer. 
 
 ## Getting Started
 1. Clone the repo to a directory with your project name
@@ -11,13 +12,15 @@ configuration, and database setup. It's a slimmed down version of the template w
 5. The template sets up Users as an example in domain, service, and data directories. Update or delete as you see fit. Delete the migrations and start new ones
 6. Go build something cool!
 
-## Components
+## Libraries
 * Router - [Chi](https://github.com/go-chi/chi)
 * Logging - [Zerolog](https://github.com/rs/zerolog)
 * .ENV file support - [godotenv](https://github.com/joho/godotenv)
 * Reading config into structs - [cleanenv](https://github.com/ilyakaznacheev/cleanenv)
 * DB extensions - [SQLX](https://github.com/jmoiron/sqlx)
 * DB migrations - [go-migrate](https://github.com/golang-migrate/migrate)
+* Mocking - [mockery](https://github.com/vektra/mockery)
+* Testify - [testify](https://github.com/stretchr/testify)
  
 ## Middleware
 * chi's RequestID - adds a request ID to the context
