@@ -6,11 +6,11 @@ import (
 )
 
 func TestDB_GetUsers(t *testing.T) {
-	db, cleanup, err := CreateTestDatabase()
+	db, cleanup := CreateTestDatabase()
 	defer cleanup()
 	pg := NewPostgresDB(db)
 
-	_, err = pg.DB.Exec(`
+	_, err := pg.DB.Exec(`
 		INSERT INTO users (id, email, password) VALUES (1, 'neel@test.com', 'password');
 	`)
 	if err != nil {
@@ -26,7 +26,7 @@ func TestDB_GetUsers(t *testing.T) {
 }
 
 func TestDB_GetUsersWithNoUsersInDB(t *testing.T) {
-	db, cleanup, err := CreateTestDatabase()
+	db, cleanup := CreateTestDatabase()
 	defer cleanup()
 	pg := NewPostgresDB(db)
 

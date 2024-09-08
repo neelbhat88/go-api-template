@@ -6,8 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"os"
-	"testing"
+	"sync"
 )
 
 const (
@@ -19,21 +18,60 @@ const (
 var (
 	containerHost string
 	containerPort int64
+
+	initDBOnce sync.Once
 )
 
-func TestMain(m *testing.M) {
-	// Setup the test database container for the whole package just once
-	host, port := SetupTestDatabaseContainer()
+func CreateTestDatabase() (*sqlx.DB, func()) {
+	initDBOnce.Do(setupTestDatabaseContainer)
 
-	// Store to package level variables for use in CreateTestDatabase
-	containerHost = host
-	containerPort = port
+	// Update config to connect to default postgres DB first
+	cfg := DatabaseConfig{
+		Port:     containerPort,
+		Host:     containerHost,
+		Name:     "postgres",
+		User:     TestDBUser,
+		Password: TestDBPassword,
+		SSLMode:  false,
+	}
+	db, err := ConnectPostgres(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to connect to postgres DB")
+	}
+	defer db.Close()
 
-	exitVal := m.Run()
-	os.Exit(exitVal)
+	// Small hack according to blogpost above to close existing connections that might be hanging, because otherwise we can't create a new database from the template
+	dropConnections(db, "template1")
+	dropConnections(db, TestDBName)
+
+	_, err = db.Exec(`
+		drop database if exists testdb		
+	`)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to drop testdb")
+	}
+
+	_, err = db.Exec(`create database testdb`)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create testdb")
+	}
+
+	// Now connect back to the testdb
+	cfg.Name = TestDBName
+	db, err = ConnectPostgres(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to connect to testdb")
+	}
+	cleanup := func() {
+		if err := db.Close(); err != nil {
+			log.Error().Err(err).Msg("Failed to close testdb connection")
+		}
+	}
+
+	return db, cleanup
 }
 
-func SetupTestDatabaseContainer() (string, int64) {
+func setupTestDatabaseContainer() {
 	// 1. Create PostgreSQL container request
 	containerReq := testcontainers.ContainerRequest{
 		Image:        "postgres:16.3-alpine",
@@ -76,55 +114,9 @@ func SetupTestDatabaseContainer() (string, int64) {
 	}
 	defer cleanup()
 
-	return host, int64(port.Int())
-}
-
-func CreateTestDatabase() (*sqlx.DB, func(), error) {
-	// Update config to connect to default postgres DB first
-	cfg := DatabaseConfig{
-		Port:     containerPort,
-		Host:     containerHost,
-		Name:     "postgres",
-		User:     TestDBUser,
-		Password: TestDBPassword,
-		SSLMode:  false,
-	}
-	db, err := ConnectPostgres(cfg)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to connect to postgres DB")
-		return db, func() {}, err
-	}
-	defer db.Close()
-
-	// Small hack according to blogpost above to close existing connections that might be hanging, because otherwise we can't create a new database from the template
-	dropConnections(db, "template1")
-	dropConnections(db, TestDBName)
-
-	_, err = db.Exec(`
-		drop database if exists testdb		
-	`)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to drop testdb")
-	}
-
-	_, err = db.Exec(`create database testdb`)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create testdb")
-	}
-
-	// Now connect back to the testdb
-	cfg.Name = TestDBName
-	db, err = ConnectPostgres(cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to connect to testdb")
-	}
-	cleanup := func() {
-		if err := db.Close(); err != nil {
-			log.Error().Err(err).Msg("Failed to close testdb connection")
-		}
-	}
-
-	return db, cleanup, nil
+	// Store to package level variables for use in CreateTestDatabase
+	containerHost = host
+	containerPort = int64(port.Int())
 }
 
 func dropConnections(db *sqlx.DB, name string) {
