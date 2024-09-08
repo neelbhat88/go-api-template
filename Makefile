@@ -17,7 +17,7 @@ run: build
 	./$(BUILD_DIR)/$(APP_NAME)
 
 mocks:
-	go generate ./...
+	mockery
 
 application: cmd/*.go
 	go mod tidy -compat=1.21

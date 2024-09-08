@@ -1,0 +1,13 @@
+with-expecter: True
+dir: mocks/{{ replaceAll .InterfaceDirRelative "internal" "internal_" }}
+mockname: "{{.InterfaceName}}_mock"
+filename: "{{.InterfaceName}}_mocks.go"
+outpkg: "{{.PackageName}}_mocks"
+all: True
+packages:
+  github.com/neelbhat88/go-api-template/pkg:
+    config:
+      recursive: True
+  github.com/neelbhat88/go-api-template/internal:
+    config:
+      recursive: True

@@ -8,10 +8,11 @@ or patterns I prefer.
 1. Clone the repo to a directory with your project name
 2. Update `go.mod` file with your project name
 3. Update `docker-compose.yml` file with your project name in the relevant places (DB name, app name, etc)
-4. Update variables in the Makefile to match your project name ($PROJNAME and $DB_CONNECTION_URI for example)
-5. Rename `.env-template` to `.env` and set appropriate values
-6. The template sets up Users as an example in domain, service, and data directories. Update or delete as you see fit. Delete the migrations and start new ones
-7. Go build something cool!
+4. Update module name in `.mockery.yml` to match your project name
+5. Update variables in the Makefile to match your project name ($PROJNAME and $DB_CONNECTION_URI for example)
+6. Rename `.env-template` to `.env` and set appropriate values
+7. The template sets up Users as an example in domain, service, and data directories. Update or delete as you see fit. Delete the migrations and start new ones
+8. Go build something cool!
 
 ## Libraries
 * Router - [Chi](https://github.com/go-chi/chi)
